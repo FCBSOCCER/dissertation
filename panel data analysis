@@ -1,0 +1,142 @@
+encode Year, gen (year)
+encode Country, gen (country)
+xtset country year 
+
+*summarize
+summarize,detailed
+asdoc summarize,detailed save(sumarize_detailed.doc)
+
+*correlation
+asdoc pwcorr FDI Corru interest Empl Urban PPP Inflation law Political, save(Pearson_Correlation_Analysis1.doc)
+
+*Hausman test
+xtreg FDI Corru interest Empl Urban GDP Inflation law Political, fe
+est store fe
+xtreg FDI Corru interest Empl Urban GDP Inflation law Political, re
+est store re
+hausman fe re, constant sigmamore
+outreg2 using hausman_results.doc, replace ctitle(Hausman Test)
+
+
+*fixed effects model
+xtreg FDI Corru,fe
+est store a
+xtreg FDI Corru interest,fe
+est store b
+xtreg FDI Corru interest Empl,fe
+est store c
+xtreg FDI Corru interest Empl Urban,fe
+est store d
+xtreg FDI Corru interest Empl Urban GDP,fe
+est store e
+xtreg FDI Corru interest Empl Urban GDP Inflation,fe
+est store f
+xtreg FDI Corru interest Empl Urban GDP Inflation law,fe
+est store g
+xtreg FDI Corru interest Empl Urban GDP Inflation law Political,fe
+est store h
+esttab a b c d e f g h,b t mtitle keep(Corru interest Empl Urban GDP Inflation law Political _cons)
+esttab a b c d e f g h using result1.rtf,replace b se mtitle nogap ar2 star(* 0.05 ** 0.01 *** 0.001)
+
+*Interaction variable
+gen FDI_Corru = FDI * Corru
+xtreg GDP Corru,fe
+est store a
+xtreg GDP FDI Corru,fe
+est store b
+xtreg GDP FDI Corru FDI_Corru,fe
+est store c
+xtreg GDP FDI Corru FDI_Corru Inflation,fe
+est store d
+xtreg GDP FDI Corru FDI_Corru Inflation interest,fe
+est store e
+xtreg GDP FDI Corru FDI_Corru Inflation interest Empl,fe
+est store f
+xtreg GDP FDI Corru FDI_Corru Inflation interest Empl Urban,fe
+est store g
+xtreg GDP FDI Corru FDI_Corru Inflation interest Empl Urban law,fe
+est store h
+xtreg GDP FDI Corru FDI_Corru Inflation interest Empl Urban law Political,fe
+est store i
+esttab a b c d e f g h i,b t mtitle keep(FDI Corru FDI_Corru Inflation interest Empl Urban law Political _cons)
+esttab a b c d e f g h i using result2.rtf,replace b se mtitle nogap ar2 star(* 0.05 ** 0.01 *** 0.001)
+
+
+*Robustness check
+xtreg FDI Corru, fe
+est store a
+xtreg FDI Corru GDP, fe
+est store b
+xtreg FDI Corru GDP law, fe
+est store c
+xtreg FDI Corru GDP law Empl, fe
+est store d
+xtreg FDI Corru GDP law Empl Urban if Country != "South Africa", fe
+est store e
+xtreg FDI Corru GDP law Empl Urban Inflation if Country != "Chile", fe
+est store f
+xtreg FDI Corru GDP law Empl Urban Inflation Political if Country != "South Africa" & Country != "Chile", fe
+est store g
+xtreg FDI Corru GDP law Empl Urban Inflation Political interest if Country != "South Africa" & Country != "Chile", fe
+est store h
+esttab a b c d e f g h, b t mtitle keep(Corru GDP law Empl Urban Inflation Political interest _cons)
+esttab a b c d e f g h using result3.rtf, replace b se mtitle nogap ar2 star(* 0.05 ** 0.01 *** 0.001)
+
+
+*region effect
+xtreg FDI Corru interest Empl Urban PPP Inflation law Political if region == 1, fe vce(robust)
+estimates store reg1
+xtreg FDI Corru interest Empl Urban PPP Inflation law Political if region == 2, fe vce(robust)
+estimates store reg2
+esttab reg1 reg2 using "regression_results.rtf", replace title("Regression Results for Regions 1 and 2") se
+
+*country level effect
+xtreg FDI Corru GDP law Political interest Empl Urban Inflation if Country == "Angola", fe
+est store a 
+xtreg FDI Corru GDP law Political interest Empl Urban Inflation if Country == "Kenya", fe
+est store b
+xtreg FDI Corru GDP law Political interest Empl Urban Inflation if Country == "Ethiopia", fe
+est store c
+xtreg FDI Corru GDP law Political interest Empl Urban Inflation if Country == "Nigeria", fe
+est store d
+xtreg FDI Corru GDP law Political interest Empl Urban Inflation if Country == "South Africa", fe
+est store e
+xtreg FDI Corru GDP law Political interest Empl Urban Inflation if Country == "Argentina", fe
+est store f
+xtreg FDI Corru GDP law Political interest Empl Urban Inflation if Country == "Brazil", fe
+est store g
+xtreg FDI Corru GDP law Political interest Empl Urban Inflation if Country == "Chile", fe
+est store h
+xtreg FDI Corru GDP law Political interest Empl Urban Inflation if Country == "Colombia", fe
+est store i
+xtreg FDI Corru GDP law Political interest Empl Urban Inflation if Country == "Mexico", fe
+est store j
+esttab a b c d e f g h i j, b se mtitle keep(Corru GDP law Political interest Empl Urban Inflation _cons)
+esttab a b c d e f g h i j using result4.rtf, replace b se mtitle nogap ar2 star(* 0.05 ** 0.01 *** 0.001)
+
+
+*VIF
+reg FDI Corru interest Empl Urban GDP Inflation law Political
+estat vif
+asdoc estat vif, append save(vif_results.doc)
+estat imtest,white
+asdoc estat imtest, append save(imtest_results.doc)
+
+* autocorrelation
+xtreg FDI Corru interest Empl Urban GDP Inflation law Political, fe
+predict res, residuals
+xtregar res L.res, fe
+test L.res = 0
+
+*panel-corrected standard errors (PCSE)
+xtpcse FDI Corru interest Empl Urban GDP Inflation law Political
+
+
+*instrumental variable
+ivregress 2sls FDI (Corr = interest Empl Urban GDP Inflation law Political), robust
+outreg2 using IV_results.doc, replace ctitle(instrumental variable)
+
+
+*dynamic panel data model
+xtabond FDI L.FDI Corru interest Empl Urban GDP Inflation law Political, vce(robust)      
+asdoc xtabond, save(xtabond_check.doc)
