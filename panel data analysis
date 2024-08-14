@@ -6,6 +6,10 @@ xtset country year
 summarize,detailed
 asdoc summarize,detailed save(sumarize_detailed.doc)
 
+* Visualizing panel data
+xtline FDI, overlay
+xtline Corru, overlay
+
 *correlation
 asdoc pwcorr FDI Corru interest Empl Urban PPP Inflation law Political, save(Pearson_Correlation_Analysis1.doc)
 
